@@ -1,0 +1,32 @@
+Well,
+Well,
+Well.
+
+1. On the Quick review tab, I Should Show dollar price and changes, Bitcoin and etherium changes and a plotting, wealth value change and a plotting of that, 
+
+2. Make an info tab for logo, email, github, and "BINVEST
+No more investment without consulting machines!
+Invest more confidently with this tool"
+
+3.Work on the look
+4.Draw some plottings for cryptocurrencies(like market cap column chart or putting logos of cryptocurrencies
+5. Doing some work for the wallet including:
+	making a database for the wallet
+	Plot history value of wealth 
+	Adding wealth section
+	Adding a hypothetical profit maker with a given rate
+	
+6. Stock section:
+	Show famous stock tracking plots
+	Put a "didn't find what you were looking for? Enter stock id to show the information"
+7. Work on the look a little bitch!
+
+	
+---------------------------------------------------------------------------
+Additional shit:
+	1.With this you can make a pandas dataframe interactive:
+		https://pandas.pydata.org/pandas-docs/stable/user_guide/style.html#Fun-stuff
+	2.add a powered by cryptocompare caption via:
+		df.style.set_caption('Colormaps, with a caption.') 
+
+
