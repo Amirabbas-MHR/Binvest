@@ -92,7 +92,7 @@ class cryptocurrency:
         self.coins_list = coins_list
         self.coin_dic = coins_dic
         return
-    def time_convert(self, t, time_zone_diffrence = 510*60):
+    def time_convert(self, t, time_zone_diffrence = 510*60-21):
         t = localtime(t+time_zone_diffrence) # Convert time.time format to hh:mm:ss
         output = "{0}:{1}:{2}".format(t[3], t[4], t[5]) # string include h and m and s
         return output

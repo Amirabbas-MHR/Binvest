@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import pickle as pkl
 from cryptocurrency import cryptocurrency
 import time
+from datetime import datetime
 
 class App:
     """
@@ -27,6 +28,7 @@ class App:
         }
         self.coins_currency_key = "USD"
         self.coins_noc = 10
+        self.coins_last_refresh = self.now()
         return
     def coins_df_styler(self, df, columns_to_apply_coloring, currency):
         """Applies coloring to columns_to_apply_coloring, if negative: red and if positive: green
@@ -50,7 +52,9 @@ class App:
     def neg_pos_color(self, x):
         #Clear
         return "color: red" if x<0 else "color: green"
-
+    def now(self):
+        t = datetime.now()
+        return "{0}:{1}:{2}".format(t.hour, t.minute, t.second)
     ############################################################################################################################
     #                                                                                                                          #
     #                                                                                                                          #
@@ -66,8 +70,9 @@ class App:
     def Wallet_tab(self):
         pass
     def Coin_tab(self):    
+        st.title("Price chart")
         cols = st.beta_columns(5) #seperating the page to 5 columns
-        self.coins_currency_key = cols[0].selectbox("Currency", ["USD", "EUR", "IRR"]) #Currency selector on the first column
+        self.coins_currency_key = cols[0].selectbox("Reference Currency", ["USD", "EUR", "IRR"]) #Currency selector on the first column
         self.coins_noc = cols[1].selectbox("Number of coins", [10, 30, 50, 100]) #Number of coins selector on the second column
         #Cort key selector on the 3rd column
         self.coins_sortKey = cols[2].selectbox("Sort key", 
@@ -89,10 +94,17 @@ class App:
         fullName_trigger = {'Full name': True, 'Symbol': False} #get_dataframe has replace_full_name and if it's true, it shows the coins full name. 
         #then we should convert the "Full name" to True and "Symbol" to False with a dictionary
         self.coins_nameType = cols[3].radio("Name format", ['Full name', 'Symbol']) # Choosing between fill name or symbol in 4th column
+        cols[4].write("last refresh: " + self.coins_last_refresh) #Text appering at the top of button
+        refreshed = False
+        if cols[4].button("Refresh"): #Refresh data button on the 5th column
+            refreshed = True
+     #Changing last update each time the refresh button is pressed
         crypto = cryptocurrency(currency=self.coins_currency_key, sort_key=self.coins_sortKey) #making a cryptocurrency object and passing it sort key and currency
         coins_df = crypto.get_dataframe(noc= self.coins_noc, replace_coin_name=fullName_trigger[self.coins_nameType]) #getting a DF
         html_df = self.coins_df_styler(coins_df,["CHANGEPCTDAY", "CHANGEDAY"], self.coins_currency_key) #Designed html by coins_df_styler
         st.table(html_df)
+        if refreshed:
+            self.coins_last_refresh = self.now()
     def Currency_tab(self):
         pass
     def Stock_tab(self):
