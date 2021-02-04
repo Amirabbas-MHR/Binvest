@@ -63,10 +63,7 @@ class App:
     ############################################################################################################################
     
     def Quick_tab(self):
-        with st.spinner("wait"):
-            time.sleep(5)
-        st.success("Salaam malavaan")
-        st.balloons()
+        pass
     def Wallet_tab(self):
         pass
     def Coin_tab(self):    
@@ -112,9 +109,33 @@ class App:
     def PreciousMetals_tab(self):
         pass
     def Pred_tab(self):
-        pass
+        with st.spinner("wait"):
+            time.sleep(5)
+        st.success("Salaam malavaan")
+        st.balloons()
     def Info_tab(self):
-        pass
+        images = {
+		 "python":Image.open("python_logo.png"),
+		 "streamlit": Image.open("streamlit_logo.png"),
+		 "pandas": Image.open("pandas_logo.png"),
+		 "cc": Image.open("cc_logo.png"),
+		 }
+        st.image(Image.open("binvest_logo.png"))
+        #st.title("BINVEST")
+        st.write("""# Do not invest anymore without consulting your machine!""")
+        st.write("""## A tool for easy and accurate access to world's live finanical data and managing your fund""", unsafe_allow_html = True)
+        st.write("""\n \n""")
+        st.markdown("""---""")
+        st.markdown("""---""")
+        st.write(""" ## <b>Powered by:</b>""", unsafe_allow_html = True)
+        st.markdown("""---""")
+        cols = st.beta_columns(2)
+        for index, logo in enumerate(images):
+            cols[int(index%2)].image(images[logo], width = 200)
+        st.markdown("""---""")
+        st.title("Contact me:")
+        st.markdown("""<a href="https://github.com/Amirabbas-MHR/Binvest" target="_blank"><b>Binvest's github</b></a>""", unsafe_allow_html=True)
+        st.write("aa.mehrdad82@gmail.com")
     ############################################################################################################################
     #                                                                                                                          #
     #                                                                                                                          #
