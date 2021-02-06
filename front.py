@@ -71,7 +71,28 @@ class App:
         ############################################################################################################################
         
         def Quick_tab(self):
-            pass
+            # Getting quick data from quick() function of cryptocurrency.now
+            crypto = cryptocurrency.now(base_coins_count= 10)
+            df = crypto.get_dataframe(10, columns=["PRICE", "CHANGEPCTDAY"], replace_coin_name=True)
+            quick_df = crypto.quick(df)
+            st.write(""" # Global finance """)
+            cols = st.beta_columns(len(quick_df))
+            
+            col_counter = 0
+            for coin in quick_df.index:
+                row = quick_df.loc[[coin]]
+                price = row["PRICE"][0]
+                change = row["CHANGEPCTDAY"][0]
+                color = 'black'
+                cols[col_counter].write(f""" ## {coin} """)
+                cols[col_counter].write(f"""<font color={color}>$ {price}</font>""", unsafe_allow_html=True)
+                
+                if change<0:
+                    color = 'red'
+                elif change>0:
+                    color = 'green'
+                cols[col_counter].write(f"""<font color={color}>{change} %</font>""", unsafe_allow_html=True)	
+                col_counter+=1
         def Wallet_tab(self):
             pass
         def Coin_tab(self):    
@@ -123,16 +144,15 @@ class App:
             st.balloons()
         def Info_tab(self):
             images = {
-            "python":Image.open("python_logo.png"),
-            "streamlit": Image.open("streamlit_logo.png"),
-            "pandas": Image.open("pandas_logo.png"),
-            "cc": Image.open("cc_logo.png"),
+            "python":Image.open("media/logos/python_logo.png"),
+            "streamlit": Image.open("media/logos/streamlit_logo.png"),
+            "pandas": Image.open("media/logos/pandas_logo.png"),
+            "cc": Image.open("media/logos/cc_logo.png"),
             }
-            st.image(Image.open("binvest_logo.png"))
+            st.image(Image.open("media/logos/binvest_logo.png"))
             #st.title("BINVEST")
-            st.write("""# Do not invest anymore without consulting your machine!""")
-            st.write("""## A tool for easy and accurate access to world's live finanical data and managing your fund""", unsafe_allow_html = True)
-            st.write("""\n \n""")
+            st.write("""# DO NOT invest without consulting your machine!""")
+            st.write("""## A tool for easy and accurate access to world's live finanical data and managing your fund.""")
             st.markdown("""---""")
             st.markdown("""---""")
             st.write(""" ## <b>Powered by:</b>""", unsafe_allow_html = True)
@@ -142,7 +162,8 @@ class App:
                 cols[int(index%2)].image(images[logo], width = 200)
             st.markdown("""---""")
             st.title("Contact me:")
-            st.markdown("""<a href="https://github.com/Amirabbas-MHR/Binvest" target="_blank"><b>Binvest's github</b></a>""", unsafe_allow_html=True)
+            st.markdown("""<a href="https://github.com/Amirabbas-MHR/Binvest" target="_blank"><b>Binvest's github</b></a>"""
+                            , unsafe_allow_html=True)
             st.write("aa.mehrdad82@gmail.com")
         ############################################################################################################################
         #                                                                                                                          #

@@ -1,0 +1,20 @@
+{
+  "Front.py": {
+    "class App": {
+      "class Tab": "Includes tab functions and their dependencies",
+      "Function main": "Executes App"
+    }
+  },
+  "cryptocurrency.py": {
+    "class cryptocurrency": {
+      "class now": "Live coins data"
+    }
+  },
+  "coins.json": "Contains 200 most famous caoins",
+  "Errors.txt": "If an excepected error occures, log is in this file",
+  "launcher.py": "Executes streamlit app",
+  "tools.py": {
+    "Fucntions reverse": "Reverses a dictionary",
+    "Function rounder": "Rounds a df values with some laws"
+  }
+}
