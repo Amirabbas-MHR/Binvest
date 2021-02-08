@@ -3,6 +3,7 @@ import streamlit as st
 import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
+import matplotlib
 import pickle as pkl
 from cryptocurrency import cryptocurrency
 import time
@@ -71,10 +72,14 @@ class App:
         ############################################################################################################################
         
         def Quick_tab(self):
+            """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
             # Getting quick data from quick() function of cryptocurrency.now
-            crypto = cryptocurrency.now(base_coins_count= 10)
-            df = crypto.get_dataframe(10, columns=["PRICE", "CHANGEPCTDAY"], replace_coin_name=True)
-            quick_df = crypto.quick(df)
+            edge = 7
+            last_update = self.now()
+            crypto = cryptocurrency.now(base_coins_count= edge**2+5)
+            heatmap_df = crypto.get_dataframe(noc = edge**2, columns = ["CHANGEPCTDAY"])
+            table_df = crypto.get_dataframe(10, columns=["PRICE", "CHANGEPCTDAY"], replace_coin_name=True)
+            quick_df = crypto.quick(table_df)
             st.write(""" # Global finance """)
             cols = st.beta_columns(len(quick_df))
             
@@ -93,6 +98,26 @@ class App:
                     color = 'green'
                 cols[col_counter].write(f"""<font color={color}>{change} %</font>""", unsafe_allow_html=True)	
                 col_counter+=1
+            """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+            st.markdown("---")
+            changes = np.array(heatmap_df['CHANGEPCTDAY'], dtype="float").reshape((edge, edge))
+            names = np.array(list(heatmap_df.index)).reshape((edge, edge))
+            textcolors=["black", "white"]
+            fig, ax = plt.subplots()    
+            im = ax.imshow(changes, cmap = "RdYlGn", interpolation="nearest", vmin=-8, vmax=8)
+            threshold = im.norm(changes.max())/2
+            for i in range(len(changes)):
+                for j in range(len(changes[i])):
+                    text = ax.text(j, i, str(names[i][j]) + '\n' + str(changes[i][j]),
+                                ha="center", va="center", color=textcolors[int(im.norm(changes[i, j]) > threshold)])
+            fig.tight_layout()
+            ax.axes.xaxis.set_visible(False)
+            ax.axes.yaxis.set_visible(False)
+            ax.set_title(f"Daily change heatmap, {last_update}")
+            cols = st.beta_columns(2)
+            cols[0].pyplot(fig)
+
+
         def Wallet_tab(self):
             pass
         def Coin_tab(self):    
