@@ -45,7 +45,7 @@ class cryptocurrency:
             #TODO save this df as a csv file to load from it
             return
 
-        def get_dataframe(self, noc, columns = ["PRICE", "MKTCAP", "TOTALVOLUME24HTO", "CHANGEPCTDAY", "CHANGEDAY", "LASTUPDATE"], 
+        def get_dataframe(self, noc, columns = ["IMAGEURL","PRICE", "MKTCAP", "TOTALVOLUME24HTO", "CHANGEPCTDAY", "CHANGEDAY", "LASTUPDATE"], 
                                 convert_time = True, replace_coin_name = False, round_nums = True):
             """ Returns a costum dataframe from main database(self.coins_data)
                 [+] noc :number of coins in dataframe
@@ -64,6 +64,7 @@ class cryptocurrency:
             coins_data = coins_data[columns].head(noc) # first selecting columns and returning first noc number of coins data
             if round_nums:
                 coins_data = tls.rounder(coins_data)
+            coins_data = coins_data.apply(lambda x: "https://cryptocompare.com"+x if x.name=="IMAGEURL" else x)
             return coins_data
         
         def get_coins_list(self):
