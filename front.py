@@ -9,23 +9,39 @@ from cryptocurrency import cryptocurrency
 import time
 from datetime import datetime
 from IPython.core.display import HTML
+import tools
 
 class Coins_table:
-    """
-        [+] coins_table.coins_currency : current currency used to show coins data
-        [+] coins_table.coins_noc : number of coins showing in the coins tab
-    """
+
     def __init__(self):
+        """
+        :param: coins_currency : current currency used to show coins data
+        :param: coins_noc : number of coins showing in the price table
+        :param: coins_last_refresh : Last refresh
+        """
         self.coins_currency_key = "USD"
         self.coins_noc = 10
-        self.coins_last_refresh = self.now()
+        self.coins_last_refresh = tools.now()
+    def price_change_color(self, x):
+        """
+        :param: x: Returns a css format coloring related to x sign.
+        :returns: color styler
+            if x is negative, returns 'color:red'
+            if x is positive, returns 'color:green'
+        """
+        return "color: red" if x<0 else "color: green"
+
     def coins_df_styler(self, df, columns_to_apply_coloring, currency):
-        """Applies coloring to columns_to_apply_coloring, if negative: red and if positive: green
-        [+] df : Coins Dataframe
-        [+] columns_to_apply_coloring : should be change columns like CHANGEPCTDAY 
-        [+] currency : current currency for putting it's sign"""
+        """
+        Creates an html for price table with custom styles
+        :param: df : Coins Dataframe
+        :param: Columns_to_apply_coloring : Should be 'change' columns like CHANGEPCTDAY 
+        :param: currency: Current currency (To show $ or ﷼ or €) 
+        :returns: price table HTML
+        """
         curr_sign = {"USD" : "$", "IRR": "﷼", "EUR" : "€"} #Translator of currency name to sign
-        repr_columns = {          
+        repr_columns = {    #Translator for dataframe key to representing name, 
+                            #exp: Instead of showing 'IMAGEURL', writes 'Logo' on the price table
                                     "IMAGEURL": "Logo", 
                                     "PRICE": "Price",
                                     "TOTALVOLUME24HTO": "Total volume(24h)",
@@ -35,40 +51,47 @@ class Coins_table:
                                     "CHANGEDAY": f'{curr_sign[currency]}Change(24h)'
                                     ""
                         }
-        df = df.rename(columns = repr_columns)
-        def path_to_image_html(path):
-            return '<img src="'+ path + '" width="30" >'
-        price_format_key = curr_sign[currency]+'{0:,.3f}' #commaa seperated, currency sign included and cut 3 digits after dot(.)
-        bigNum_format_key = curr_sign[currency]+'{0:,.0f}'
-        #1. coloring the selected columns
-        #2. putting a % sign and cutting 3 digits after .
-        #3. applying price_format_key to MKTCAP and TOTALVOL...
-        #4. selecting 3 digits after . and adding the currency sign to the change day column
+        df = df.rename(columns = repr_columns) #Renaming columns to representing names
+        
+        price_format_key = curr_sign[currency]+'{0:,.3f}' #commaa seperated, currency sign included and cuts 3 digits after dot(.)
+        bigNum_format_key = curr_sign[currency]+'{0:,.0f}' #commaa seperated, currency sign included and cuts all digits after dot
+
+        #1. Coloring the selected columns(After translating column names to representing names)
+        #2. Putting a % sign and cutting 3 digits after dot for %change
+        #3. Applying price_format_key to price, and bigNum_format_key tp MKTCAP and TOTALVOLUME24HTO
+        #4. Selecting 3 digits after dot and adding the currency sign to the daily change(CHANGEDAY) column
+        #5. 
         html_df = df.style\
-        .applymap(self.neg_pos_color, subset = list(repr_columns[column] for column in columns_to_apply_coloring))\
+        .applymap(self.price_change_color, subset = list(repr_columns[column] for column in columns_to_apply_coloring))\
         .format({repr_columns["CHANGEPCTDAY"]: "%{:.3}"})\
         .format({repr_columns["PRICE"] : price_format_key,
                     repr_columns["MKTCAP"]: bigNum_format_key, 
                     repr_columns["TOTALVOLUME24HTO"]: bigNum_format_key})\
         .format({repr_columns["CHANGEDAY"] : curr_sign[currency]+'{:.3f}'})\
-        .format({repr_columns["IMAGEURL"]: path_to_image_html}).render()
-        return html_df.replace("\n", '') #returns an html of designed df
-    def neg_pos_color(self, x):
-        #Clear
-        return "color: red" if x<0 else "color: green"
-    def now(self):
-        t = datetime.now()
-        return "{0}:{1}:{2}".format(t.hour, t.minute, t.second)
+        .format({repr_columns["IMAGEURL"]: tools.image_tag}).render() #Render styler object to real html
+        return html_df.replace("\n", '') #Streamlit is sensitive to \n
+
     def table(self, refreshed):
-        #Changing last update each time the refresh button is pressed
-        fullName_trigger = {'Full name': True, 'Symbol': False} #get_dataframe has replace_full_name and if it's true, it shows the coins full name. 
-        crypto = cryptocurrency.now(currency=self.coins_currency_key, sort_key=self.coins_sortKey) #making a cryptocurrency object and passing it sort key and currency
+        """
+        Gets data and send it to df styler, then returns table HTML
+        :param: refreshed: form main function, if user press refresh button, this param is True and last_refresh will be updated
+        :returns: Table HTML
+        """
+        fullName_trigger = {'Full name': True, 'Symbol': False} #get_dataframe has replace_full_name and if it's true, 
+                                                                #it shows the coins full name. 
+        crypto = cryptocurrency.now(currency=self.coins_currency_key, sort_key=self.coins_sortKey)#making a cryptocurrency object
+                                                                                                  #and passing it sort key and currency
         coins_df = crypto.get_dataframe(noc= self.coins_noc, replace_coin_name=fullName_trigger[self.coins_nameType]) #getting a DF
-        html_df = self.coins_df_styler(coins_df,["CHANGEPCTDAY", "CHANGEDAY"], self.coins_currency_key) #Designed html by coins_df_styler
-        if refreshed:
-            self.coins_last_refresh = self.now()
+        html_df = self.coins_df_styler(coins_df,
+                                       columns_to_apply_coloring = ["CHANGEPCTDAY", "CHANGEDAY"],
+                                       currency= self.coins_currency_key) #Designed html by coins_df_styler
+        if refreshed: #Changing last update each time the refresh button is pressed
+            self.coins_last_refresh = tools.now()
         return html_df
     def main(self):
+        """
+        Main function, Shows price table
+        """
         ###########################Buttons and options##########################
         st.title("Price chart")
         cols = st.beta_columns(5) #seperating the page to 5 columns
@@ -99,19 +122,21 @@ class Coins_table:
             refreshed = True
         st.markdown("---")
         ########################################################################
-        html_df = self.table(refreshed)
-        st.write(html_df, unsafe_allow_html = True)
+        html_df = self.table(refreshed) #Getting table HTML from table() function
+        st.write(html_df, unsafe_allow_html = True) #Showing the table html
 class Quick_tab:
     def __init__(self):
         pass
-    def now(self):
-        t = datetime.now()
-        return "{0}:{1}:{2}".format(t.hour, t.minute, t.second)
-    def quick_crypto_price(self):
+    def quick_crypto_price(self, n=5):
+        """
+        Shows first n important coins prices and daily changes in %
+        DO NOT pass numbers bigger tha 5 to n
+        """
         # Getting quick data from quick() function of cryptocurrency.now
-        crypto = cryptocurrency.now(base_coins_count= 10) #for an edge*edge square(heatmap) we need atleast edge^2 coins
+        crypto = cryptocurrency.now(base_coins_count= 10)
         print(crypto.coins_data)
-        table_df = crypto.get_dataframe(10, columns=["PRICE", "CHANGEPCTDAY", "IMAGEURL"], replace_coin_name=True) #Quick and important data for first 10 coins
+        table_df = crypto.get_dataframe(10, columns=["PRICE", "CHANGEPCTDAY", "IMAGEURL"], 
+                                            replace_coin_name=True) #Quick and important data for first 10 coins
         quick_df = crypto.quick(table_df) #Extracting price and daily change of some important coins
         st.write(""" # Global finance """)
         cols = st.beta_columns(len(quick_df))#Seperating screen to number of coins in quick_df
@@ -122,9 +147,8 @@ class Quick_tab:
             price = row["PRICE"][0]
             change = row["CHANGEPCTDAY"][0]
             color = 'black'
-            
-            path = f'<img src="{row["IMAGEURL"][0]}" width="30" >'
-            cols[col_counter].write(f""" ## {path} {coin} """, unsafe_allow_html = True)
+            img = tools.image_tag(row["IMAGEURL"][0], width=25)
+            cols[col_counter].write(f""" ## {img} {coin} """, unsafe_allow_html = True)
             cols[col_counter].write(f"""<font color={color} size=4>$ {price}</font>""", unsafe_allow_html=True)
             if change<0:
                 color = 'red'
@@ -133,76 +157,86 @@ class Quick_tab:
             cols[col_counter].write(f"""<font color={color} size=4>{change} %</font>""", unsafe_allow_html=True)	
             col_counter+=1
         st.markdown("---")
-        #"""""""""""""""""""""""""""""""""""""""""""""""""""""Heatmap"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-        #"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-        
+
     def heatmap(self, edge=7):
-        last_update = self.now()
+        """
+        Makes a matplotlib heatmap from daily change of first edge**2 coins
+        :param: edge: length of heatmap(number of coins in each row/column)
+        :returns: heatmap fig(matplotlib)
+        """
+        last_update = tools.now()
         crypto = cryptocurrency.now(base_coins_count= edge**2+5) #for an edge*edge square(heatmap) we need atleast edge^2 coins
         heatmap_df = crypto.get_dataframe(noc = edge**2, columns = ["CHANGEPCTDAY"]) #Heatmap is created using daily change
-        changes = np.array(heatmap_df['CHANGEPCTDAY'], dtype="float").reshape((edge, edge))
-        names = np.array(list(heatmap_df.index)).reshape((edge, edge))
-        textcolors=["black", "white"]
+        changes = np.array(heatmap_df['CHANGEPCTDAY'], dtype="float").reshape((edge, edge)) #Getting changes and reshaping array to an edge*edge
+        names = np.array(list(heatmap_df.index)).reshape((edge, edge)) #Reshaping coin symbols to an edge*edge array
+        textcolors=["white", "black"]
         fig, ax = plt.subplots()    
-        im = ax.imshow(changes, cmap = "RdYlGn", interpolation="nearest", vmin=-8, vmax=8)
-        threshold = im.norm(changes.max())/2
+        im = ax.imshow(changes, cmap = "RdYlGn", interpolation="nearest", vmin=-8, vmax=8) #Heatmap(olnly colors)
+        threshold_lower = -5
+        threshold_higher = 5
+        #Writing change number and coin symbol
         for i in range(len(changes)):
             for j in range(len(changes[i])):
                 ax.text(j, i, str(names[i][j]) + '\n' + str(changes[i][j]),
-                    ha="center", va="center", color=textcolors[int(im.norm(changes[i, j]) > threshold)])
+                    ha="center", va="center", color=textcolors[threshold_higher > changes[i][j] > threshold_lower])
         fig.tight_layout()
         ax.axes.xaxis.set_visible(False)    
         ax.axes.yaxis.set_visible(False)
         ax.set_title(f"Daily change heatmap, {last_update}")
         return fig
     def main(self):
+        """
+        Main function, shows everything in the quick tab
+        """
         self.quick_crypto_price()
         cols = st.beta_columns(2)
         fig = self.heatmap()
         cols[0].pyplot(fig)
 class Info_tab:
+    """
+    Class for informations tab
+    """
     def __init__(self):
         return
     def main(self):
-        images = {
+        "Main function, shows everything on the info tab"
+        images = { #loading logos from local folders
             "python":Image.open("media/logos/python_logo.png"),
             "streamlit": Image.open("media/logos/streamlit_logo.png"),
             "pandas": Image.open("media/logos/pandas_logo.png"),
             "cc": Image.open("media/logos/cc_logo.png"),
             }
-        st.image(Image.open("media/logos/binvest_logo.png"))
-        #st.title("BINVEST")
-        st.write("""# DO NOT invest without consulting your machine!""")
-        st.write("""## A tool for easy and accurate access to world's live finanical data and managing your fund.""")
+        st.image(Image.open("media/logos/binvest_logo.png")) #loading Binvest logo
+        st.write("""# DO NOT invest in cryptocurrencies without consulting your machine!""")
+        st.write("""## A tool for easy and accurate access to cypto market information and managing your fund.""")
         st.markdown("""---""")
         st.markdown("""---""")
         st.write(""" ## <b>Powered by:</b>""", unsafe_allow_html = True)
         st.markdown("""---""")
-        cols = st.beta_columns(2)
+        cols = st.beta_columns(2) #Sepereating page to 2 columns
         for index, logo in enumerate(images):
-            cols[int(index%2)].image(images[logo], width = 200)
+            cols[int(index%2)].image(images[logo], width = 200) #displaying logos in order
         st.markdown("""---""")
         st.title("Contact me:")
         st.markdown("""<a href="https://github.com/Amirabbas-MHR/Binvest" target="_blank"><b>Binvest's github</b></a>"""
-                        , unsafe_allow_html=True)
+                        , unsafe_allow_html=True) #Link to Binvest's github
         st.write("aa.mehrdad82@gmail.com")
     
 
 class App:
     """
-        Class App:
-            [+] Class Tab: includes tab functions and their dependencies
-            [+] Function main: main function (runs the App)
+    Main app class, 
+    Includes Tab class and main function
     """
     def __init__(self):
         pass
     class Tab:
         """
-        Our main app is this object.
-            [+] App.tabs: A dict containing page names and their related tab
+        1. Includes a dictionary for tabs and their related function
+        2. Includes functions for each tab that makes an object of that tab class and runs main function on them
         """
         def __init__(self):
-            self.tabs = { #Tabs on the side bar
+            self.tabs = { #Tabs on the side bar with their related functions
             "Quick review": self.Quick_tab,
             "Price table": self.Price_table,
             "Info": self.Info_tab,
@@ -218,10 +252,13 @@ class App:
         def Info_tab(self):
             info = Info_tab()
             info.main()
+
     def main(self):
+        """
+        The main app executing function, sets page config, page title, page icon, and sidebar. and runs the related function for each tab.
+        """
         Tabs = self.Tab()
         st.set_page_config(layout="wide", page_title="Binvest", page_icon="💵", initial_sidebar_state="collapsed")
-        #st.sidebar.title(""" Choose a service:""")
         tab = st.sidebar.radio("""- Choose a tab:""", list(Tabs.tabs.keys())) #tabs.keys() is a list of tabs
         Tabs.tabs[tab]() #running the related function
 
