@@ -81,6 +81,6 @@ class cryptocurrency:
             t = localtime(t+time_zone_diffrence) # Convert time.time format to hh:mm:ss
             output = "{0}:{1}:{2}".format(t[3], t[4], t[5]) # string include h and m and s
             return output
-        def quick(self, df, coins_list = ["Bitcoin", "Ethereum", "XRP", "Litecoin"], infos = ["PRICE", "CHANGEPCTDAY"]):
+        def quick(self, df, coins_list = ["Bitcoin", "Ethereum", "XRP", "Polkadot", "Cardano"], infos = ["PRICE", "CHANGEPCTDAY", "IMAGEURL"]):
             return df.loc[coins_list, infos]
         

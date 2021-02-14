@@ -1,11 +1,9 @@
 requests
 urllib3
 socket
-json
 streamlit
 numpy
 pandas
-PIL
-altair
 matplotlib
 cryptocompare
+ipython
