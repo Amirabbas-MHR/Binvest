@@ -1,5 +1,3 @@
 # Binvest
-Web based Investment assistant tool.
-
-# Under maintance
-Run launcher.py
+ ## DO NOT invest in cryptocurrencies without consulting your machine
+ ### A tool for easy and accurate access to cypto market info
