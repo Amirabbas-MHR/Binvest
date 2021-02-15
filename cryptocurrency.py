@@ -12,11 +12,17 @@ class cryptocurrency:
     class now:
         def __init__(self, sort_key = 'default', currency = "USD", base_coins_count = 50):
             """ 
-            :param: coins_data : full data of first n coins in database(n = base_coins_count)  
+            :param: sort_key : sorting coins with this key. default is most famous ones
+            :param: currency : values of table are in 'currency' unit
+            :param: base_coins_count: reciving information from first base_coin_count coins
+
+            result:
+            self.coins_data : full data of first n coins in database(n = base_coins_count)  
                 in currency unit and sorted by sort_key.
-            :param: symbols_list : only symbols of selected coins
-            :param: coins_list : only names of selected coins
-            :param: coin_dic : a dictionary to find symbol of a coin if you have it's name
+            self.symbols_list : only symbols of selected coins
+            self.coins_list : only names of selected coins
+            self.name2sym  : Translator form name to symbol
+            self.sym2name : Translator from symbol to name 
             """
             # Get a list of coins in coins.json
             self.get_coins_list() #List of coins that we want to recive data from them
@@ -60,7 +66,7 @@ class cryptocurrency:
                 convertor = dict(zip(bad_format, good_format)) # Making a list that translates bad format to goof format
                 coins_data["LASTUPDATE"].replace(convertor, inplace=True) # Replace LASTUPDATE column with times
             if replace_coin_name:
-                coins_data.rename(index = tools.reverse_dic(self.coin_dic), inplace=True) # Replace LASTUPDATE column with times
+                coins_data.rename(index = tools.reverse_dic(self.name2sym), inplace=True) # Replace LASTUPDATE column with times
             coins_data = coins_data[columns].head(noc) # first selecting columns and returning first noc number of coins data
             if round_nums:
                 coins_data = tools.rounder(coins_data)
@@ -73,7 +79,8 @@ class cryptocurrency:
             And saves information:
             self.symbols_list : Symbols of coins
             self.coins_list  : Names of coins
-            self.coin_dic  : Translator form name to symbol
+            self.name2sym  : Translator form name to symbol
+            self.sym2name : Translator from symbol to name 
             """
             string = open('coins.json', 'r').readline() # 200 important coins are in coins.json with their symbols
             #An alternative for last line is to read the cryptocompare database that includes almost 5000 coins and it takes lots of time
@@ -82,7 +89,8 @@ class cryptocurrency:
             symbols_list = [coins_dic[i] for i in coins_list] # Getting symbols
             self.symbols_list = symbols_list
             self.coins_list = coins_list
-            self.coin_dic = coins_dic
+            self.name2sym = coins_dic
+            self.sym2name = tools.reverse_dic(coins_dic)
             return
         
         def quick(self, df, coins_list = ["Bitcoin", "Ethereum", "XRP", "Polkadot", "Cardano"], 
