@@ -126,19 +126,18 @@ class Coins_table:
         st.write(html_df, unsafe_allow_html = True) #Showing the table html
 class Quick_tab:
     def __init__(self):
-        pass
-    def quick_crypto_price(self, n=5):
+        self.crypto = cryptocurrency.now()
+    def coins_to_follow_up(self, n=5):
         """
         Shows first n important coins prices and daily changes in %
         DO NOT pass numbers bigger tha 5 to n
         """
         # Getting quick data from quick() function of cryptocurrency.now
-        crypto = cryptocurrency.now(base_coins_count= 10)
-        print(crypto.coins_data)
-        table_df = crypto.get_dataframe(10, columns=["PRICE", "CHANGEPCTDAY", "IMAGEURL"], 
+        
+        table_df = self.crypto.get_dataframe(10, columns=["PRICE", "CHANGEPCTDAY", "IMAGEURL"], 
                                             replace_coin_name=True) #Quick and important data for first 10 coins
-        quick_df = crypto.quick(table_df) #Extracting price and daily change of some important coins
-        st.write(""" # Global finance """)
+        quick_df = self.crypto.quick(table_df) #Extracting price and daily change of some important coins
+        st.write(""" # Coins to follow up: """)
         cols = st.beta_columns(len(quick_df))#Seperating screen to number of coins in quick_df
         col_counter = 0
         #Writing data of quicK_df with colors related to positive and negative changes
@@ -156,8 +155,28 @@ class Quick_tab:
                 color = 'green'
             cols[col_counter].write(f"""<font color={color} size=4>{change} %</font>""", unsafe_allow_html=True)	
             col_counter+=1
-        st.markdown("---")
 
+    def worst_best_coin(self):
+        df = self.crypto.coins_data
+        worst_coin = list(df[df["CHANGEPCTDAY"] == df["CHANGEPCTDAY"].min()].index)[0] #Selecting the coin that has lowes CHANGEPCTDAY
+        best_coin = list(df[df["CHANGEPCTDAY"] == df["CHANGEPCTDAY"].max()].index)[0] #Selecting the coin that has highest CHANGEPCTDAY
+        result_df = df.loc[[worst_coin, best_coin], ["CHANGEPCTDAY", "IMAGEURL"]] #Making a df including logo and daily change
+        
+        cols = st.beta_columns(2)
+        #Most profitable coin
+        cols[0].write("""## <b>Biggest Growth:</b>""", unsafe_allow_html=True) #Title
+        img = tools.image_tag("https://cryptocompare.com"+result_df["IMAGEURL"][best_coin], width=30) #Image rendering
+        cols[0].write(f""" ## {img} <font  style="vertical-align:bottom; size:8;"> {self.crypto.sym2name[best_coin]} </font> """,
+                         unsafe_allow_html=True) #Showing logo and best coin's name
+        cols[0].write(f"""<font color="green" size=5>+ {round(result_df["CHANGEPCTDAY"][best_coin], 3)}%</font>""",
+                         unsafe_allow_html=True) #Showing daily change in green
+        #Worst coin
+        cols[1].write("""## <b>Biggest Fall:</b>""", unsafe_allow_html=True) #Title
+        img = tools.image_tag("https://cryptocompare.com"+result_df["IMAGEURL"][worst_coin], width=30) #Image rendering
+        cols[1].write(f""" ## {img} <font style="vertical-align:bottom; size:8;"> {self.crypto.sym2name[worst_coin]} </font> """,
+                         unsafe_allow_html=True) #Showing logo and worst coin's name
+        cols[1].write(f"""<font color="red" size=5 >{round(result_df["CHANGEPCTDAY"][worst_coin], 3)}%</font>""",
+                         unsafe_allow_html=True) #Showing daily change in red
     def heatmap(self, edge=7):
         """
         Makes a matplotlib heatmap from daily change of first edge**2 coins
@@ -171,14 +190,15 @@ class Quick_tab:
         names = np.array(list(heatmap_df.index)).reshape((edge, edge)) #Reshaping coin symbols to an edge*edge array
         textcolors=["white", "black"]
         fig, ax = plt.subplots()    
-        im = ax.imshow(changes, cmap = "RdYlGn", interpolation="nearest", vmin=-8, vmax=8) #Heatmap(olnly colors)
+        ax.imshow(changes, cmap = "RdYlGn", interpolation="nearest", vmin=-8, vmax=8) #Heatmap(olnly colors)
         threshold_lower = -5
         threshold_higher = 5
         #Writing change number and coin symbol
         for i in range(len(changes)):
             for j in range(len(changes[i])):
+                color = textcolors[1] if threshold_higher > changes[i][j] > threshold_lower else textcolors[0]
                 ax.text(j, i, str(names[i][j]) + '\n' + str(changes[i][j]),
-                    ha="center", va="center", color=textcolors[threshold_higher > changes[i][j] > threshold_lower])
+                    ha="center", va="center", color=color)
         fig.tight_layout()
         ax.axes.xaxis.set_visible(False)    
         ax.axes.yaxis.set_visible(False)
@@ -188,10 +208,14 @@ class Quick_tab:
         """
         Main function, shows everything in the quick tab
         """
-        self.quick_crypto_price()
+        self.coins_to_follow_up()
+        st.markdown("---")
+        self.worst_best_coin()
+        st.markdown("---")
         cols = st.beta_columns(2)
         fig = self.heatmap()
         cols[0].pyplot(fig)
+
 class Info_tab:
     """
     Class for informations tab
