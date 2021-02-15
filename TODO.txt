@@ -3,9 +3,9 @@ App contains n main tabs:
     *Coins review section:
        -Four top coins price and daily change
        -Daily change Heatmap of top 25 coins to show a landsace of market
-       -Price plot for Bitcoin, Ethereum and maybe one ro two other coins #TODO
-       -Sud deh tarin coin in lahze(daily change)(Ba logo)(Translate) #TODO
-       -Zarar deh tarin coin dar in lahze(daily change)(Ba logo)(Translate) #TODO
+       -Price plot for Bitcoin, Ethereum and maybe one or two other coins #TODO
+       -Most profitable coin at the moment(daily change) 
+       -Biggest fall in coins at the momebt(daily change)
     *Wallet review section:
        -Total wealth value in Dollars #TODO
        -Wealth value change in % #TODO
