@@ -7,7 +7,7 @@ import matplotlib
 import pickle as pkl
 from cryptocurrency import cryptocurrency
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from IPython.core.display import HTML
 import tools
 
@@ -22,6 +22,7 @@ class Coins_table:
         self.coins_currency_key = "USD"
         self.coins_noc = 10
         self.coins_last_refresh = tools.now()
+        self.crypto = cryptocurrency()
     def price_change_color(self, x):
         """
         :param: x: Returns a css format coloring related to x sign.
@@ -88,6 +89,32 @@ class Coins_table:
         if refreshed: #Changing last update each time the refresh button is pressed
             self.coins_last_refresh = tools.now()
         return html_df
+    def determine_historical_color(self, df):
+        first_value = df["close"][list(df.index)[0]]
+        last_value = df["close"][list(df.index)[-1]]
+        if last_value>first_value:
+            return "g"
+        return "r"
+    def historical(self, coin, time_step, nod, columns, 
+                   add_this_moment_price = False, currency="USD", end=datetime.now()):
+        """
+        All params belong to historical_plot function
+        :returns: A historical plot
+        """
+        if time_step != 'min':
+            add_this_moment_price = False
+        curr_sign = {"USD" : "$", "IRR": "﷼", "EUR" : "€"}
+        df = self.crypto.get_historical(coin = coin, time_step=time_step, nod = nod,
+                                           columns=columns, currency=currency, add_this_moment_price=add_this_moment_price)
+        color = self.determine_historical_color(df)
+        fig, ax = plt.subplots()
+        df.plot(ax = ax, color = color)
+        ylabels = ax.get_yticks().tolist()
+        ylabels = [curr_sign[currency]+str(round(num, 5)) for num in ylabels]
+        ax.set_yticklabels(ylabels)
+        
+        return fig
+
     def main(self):
         """
         Main function, Shows price table
@@ -124,7 +151,9 @@ class Coins_table:
         ########################################################################
         html_df = self.table(refreshed) #Getting table HTML from table() function
         st.write(html_df, unsafe_allow_html = True) #Showing the table html
+
 class Quick_tab:
+    #TODO add comments for historical plotting
     def __init__(self):
         self.crypto = cryptocurrency.now()
     def coins_to_follow_up(self, n=5):
@@ -197,12 +226,16 @@ class Quick_tab:
         for i in range(len(changes)):
             for j in range(len(changes[i])):
                 color = textcolors[1] if threshold_higher > changes[i][j] > threshold_lower else textcolors[0]
-                ax.text(j, i, str(names[i][j]) + '\n' + str(changes[i][j]),
+                ax.text(j, i, str(names[i][j]) + '\n' + str(changes[i][j]) + '%',
                     ha="center", va="center", color=color)
         fig.tight_layout()
         ax.axes.xaxis.set_visible(False)    
         ax.axes.yaxis.set_visible(False)
         ax.set_title(f"Daily change heatmap, {last_update}")
+        return fig
+    def quick_historical_plot(self, coin, time_step):
+        c_table = Coins_table()
+        fig = c_table.historical(coin, time_step=time_step, nod=100, columns=['close'], add_this_moment_price=True)
         return fig
     def main(self):
         """
@@ -215,6 +248,11 @@ class Quick_tab:
         cols = st.beta_columns(2)
         fig = self.heatmap()
         cols[0].pyplot(fig)
+        self.crypto.coins_list
+        coin = self.crypto.name2sym[cols[1].selectbox("Coin:", self.crypto.coins_list)]
+        time_step = cols[1].selectbox("Time step:", ["day", "hour", "min"])
+        fig2 = self.quick_historical_plot(coin, time_step)
+        cols[1].pyplot(fig2)
 
 class Info_tab:
     """
@@ -246,7 +284,6 @@ class Info_tab:
                         , unsafe_allow_html=True) #Link to Binvest's github
         st.write("aa.mehrdad82@gmail.com")
     
-
 class App:
     """
     Main app class, 
