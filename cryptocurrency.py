@@ -129,17 +129,19 @@ class cryptocurrency:
             raise ValueError("Only 'day', 'hour' and 'min' are valid as time_stamp")
             
         df = pd.DataFrame.from_dict(data) #converting json like recived data to a pandas df
-        index = [datetime.fromtimestamp(tstamp) for tstamp in df.time] # Setting tiem laps as index
-        df.index = index
-
+        
+        index = [datetime.fromtimestamp(tstamp) for tstamp in df.time]
+        dates = [t + timedelta(seconds = 510*60-21) for t in index]# Converting timelaps to Tehran time zone
+        df.index = dates
+        
         if add_this_moment_price:
-            if columns == ['close']:
+            if columns == ['close'] and time_step=="min":
                 #Adding this moment's price to tail
                 price = cc.get_price(coin ,currency)[coin][currency]
                 t = datetime.now()
                 now_df = pd.DataFrame({"close": price}, index = [t])
                 df = df.append(now_df)
             else:
-                raise ValueError("add_this_moment_price will only work when dataframe is a price table")
-            
+                raise ValueError("add_this_moment_price will only work when dataframe is a price table and time_step is 'min'")
+        
         return df[columns]
