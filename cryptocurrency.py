@@ -4,6 +4,7 @@ from os import path
 import pickle as pk
 import json
 from time import time, localtime
+from datetime import datetime, timedelta
 import tools
 
 class cryptocurrency:
@@ -102,4 +103,43 @@ class cryptocurrency:
             :returns: Customized df
             """
             return df.loc[coins_list, infos_list]
-        
+    def get_historical(self, coin, time_step, nod, end=datetime.now(), columns=['close'], 
+                   currency="USD", add_this_moment_price = False):
+        """
+        :param: coin: It should be symbol. e.x 'BTC'
+        :param: time_step: It can be 'day' for price history in last days, 'hour' for ... and 'min' for ...
+        :param: nod: Number of dates. Actually number of rows in returned dataframe(Except when add_this_moment_price is True)
+        :param: end: Default is today date. But can pass a date to recive data from nod days before end to end day
+        :param: columns: A list of columns from ['high', 'low', 'open', 'volumefrom', 'volumeto', 'close']. 
+                        And if it is 'OHLC', columns will be consideres as ['open', 'high', 'low', 'close'].
+        :param: add_this_moment_price: Only works when columns=['close']. Adds this moment's price to dataframe.
+        :param: currency: currency unit
+        :returns: A dataframe with index of time laps and columns passed
+        """
+        if columns == "OHLC": #Famous open, high, low, close dataframe for candle bars
+            columns = ['open', 'high', 'low', 'close']
+
+        if time_step == "day":
+            data = cc.get_historical_price_day(coin, currency, limit=nod, toTs=end)
+        elif time_step == "hour":
+            data = cc.get_historical_price_hour(coin, currency, limit=nod, toTs=end)
+        elif time_step == "min":
+            data = cc.get_historical_price_minute(coin, currency, limit=nod, toTs=end)
+        else:
+            raise ValueError("Only 'day', 'hour' and 'min' are valid as time_stamp")
+            
+        df = pd.DataFrame.from_dict(data) #converting json like recived data to a pandas df
+        index = [datetime.fromtimestamp(tstamp) for tstamp in df.time] # Setting tiem laps as index
+        df.index = index
+
+        if add_this_moment_price:
+            if columns == ['close']:
+                #Adding this moment's price to tail
+                price = cc.get_price(coin ,currency)[coin][currency]
+                t = datetime.now()
+                now_df = pd.DataFrame({"close": price}, index = [t])
+                df = df.append(now_df)
+            else:
+                raise ValueError("add_this_moment_price will only work when dataframe is a price table")
+            
+        return df[columns]
