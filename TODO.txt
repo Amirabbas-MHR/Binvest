@@ -9,7 +9,7 @@ App contains n main tabs:
     *Wallet review section:
        -Total wealth value in Dollars #TODO
        -Wealth value change in % #TODO
-       -Plot for total wealth change sincse investing #TODO
+       -Plot for total wealth change sincse(wrong writing?) investing #TODO
        -Best investment till now: Coin name and change in % #TODO
        -Worst investment till now: Coin name and change in % #TODO
        
