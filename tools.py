@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from time import localtime
 def reverse_dic(dic):
     """
@@ -57,6 +57,8 @@ def time_convertor(t, time_zone_diffrence = 510*60-21):
     :param: time_zone_diffrence: Diffrence between t and output timezones(For Tehran and New York, it is 510*60-21 seconds)
     :returns: t + diffrence in hh:mm:ss format
     """
+
     t = localtime(t+time_zone_diffrence) # Convert timestamp format to hh:mm:ss
     output = "{0}:{1}:{2}".format(t[3], t[4], t[5]) # string include h and m and s
     return output
+    
