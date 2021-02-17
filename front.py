@@ -3,13 +3,116 @@ import streamlit as st
 import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
-import matplotlib
+from mpl_finance import candlestick2_ochl
 import pickle as pkl
 from cryptocurrency import cryptocurrency
 import time
 from datetime import datetime, timedelta
 from IPython.core.display import HTML
 import tools
+import matplotlib.ticker as ticker
+
+class Quick_tab:
+    #TODO add comments for historical plotting
+    def __init__(self):
+        self.crypto = cryptocurrency.now()
+    def coins_to_follow_up(self, n=5):
+        """
+        Shows first n important coins prices and daily changes in %
+        DO NOT pass numbers bigger tha 5 to n
+        """
+        # Getting quick data from quick() function of cryptocurrency.now
+        
+        table_df = self.crypto.get_dataframe(10, columns=["PRICE", "CHANGEPCTDAY", "IMAGEURL"], 
+                                            replace_coin_name=True) #Quick and important data for first 10 coins
+        quick_df = self.crypto.quick(table_df) #Extracting price and daily change of some important coins
+        st.write(""" # Coins to follow up: """)
+        cols = st.beta_columns(len(quick_df))#Seperating screen to number of coins in quick_df
+        col_counter = 0
+        #Writing data of quicK_df with colors related to positive and negative changes
+        for coin in quick_df.index:
+            row = quick_df.loc[[coin]]
+            price = row["PRICE"][0]
+            change = row["CHANGEPCTDAY"][0]
+            color = 'black'
+            img = tools.image_tag(row["IMAGEURL"][0], width=25)
+            cols[col_counter].write(f""" ## {img} {coin} """, unsafe_allow_html = True)
+            cols[col_counter].write(f"""<font color={color} size=4>$ {price}</font>""", unsafe_allow_html=True)
+            if change<0:
+                color = 'red'
+            elif change>0:
+                color = 'green'
+            cols[col_counter].write(f"""<font color={color} size=4>{change} %</font>""", unsafe_allow_html=True)	
+            col_counter+=1
+
+    def worst_best_coin(self):
+        df = self.crypto.coins_data
+        worst_coin = list(df[df["CHANGEPCTDAY"] == df["CHANGEPCTDAY"].min()].index)[0] #Selecting the coin that has lowes CHANGEPCTDAY
+        best_coin = list(df[df["CHANGEPCTDAY"] == df["CHANGEPCTDAY"].max()].index)[0] #Selecting the coin that has highest CHANGEPCTDAY
+        result_df = df.loc[[worst_coin, best_coin], ["CHANGEPCTDAY", "IMAGEURL"]] #Making a df including logo and daily change
+        
+        cols = st.beta_columns(2)
+        #Most profitable coin
+        cols[0].write("""## <b>Biggest Growth:</b>""", unsafe_allow_html=True) #Title
+        img = tools.image_tag("https://cryptocompare.com"+result_df["IMAGEURL"][best_coin], width=30) #Image rendering
+        cols[0].write(f""" ## {img} <font  style="vertical-align:bottom; size:8;"> {self.crypto.sym2name[best_coin]} </font> """,
+                         unsafe_allow_html=True) #Showing logo and best coin's name
+        cols[0].write(f"""<font color="green" size=5>+ {round(result_df["CHANGEPCTDAY"][best_coin], 3)}%</font>""",
+                         unsafe_allow_html=True) #Showing daily change in green
+        #Worst coin
+        cols[1].write("""## <b>Biggest Fall:</b>""", unsafe_allow_html=True) #Title
+        img = tools.image_tag("https://cryptocompare.com"+result_df["IMAGEURL"][worst_coin], width=30) #Image rendering
+        cols[1].write(f""" ## {img} <font style="vertical-align:bottom; size:8;"> {self.crypto.sym2name[worst_coin]} </font> """,
+                         unsafe_allow_html=True) #Showing logo and worst coin's name
+        cols[1].write(f"""<font color="red" size=5 >{round(result_df["CHANGEPCTDAY"][worst_coin], 3)}%</font>""",
+                         unsafe_allow_html=True) #Showing daily change in red
+    def heatmap(self, edge=7):
+        """
+        Makes a matplotlib heatmap from daily change of first edge**2 coins
+        :param: edge: length of heatmap(number of coins in each row/column)
+        :returns: heatmap fig(matplotlib)
+        """
+        last_update = tools.now()
+        crypto = cryptocurrency.now(base_coins_count= edge**2+5) #for an edge*edge square(heatmap) we need atleast edge^2 coins
+        heatmap_df = crypto.get_dataframe(noc = edge**2, columns = ["CHANGEPCTDAY"]) #Heatmap is created using daily change
+        changes = np.array(heatmap_df['CHANGEPCTDAY'], dtype="float").reshape((edge, edge)) #Getting changes and reshaping array to an edge*edge
+        names = np.array(list(heatmap_df.index)).reshape((edge, edge)) #Reshaping coin symbols to an edge*edge array
+        textcolors=["white", "black"]
+        fig, ax = plt.subplots()    
+        ax.imshow(changes, cmap = "RdYlGn", interpolation="nearest", vmin=-8, vmax=8) #Heatmap(olnly colors)
+        threshold_lower = -5
+        threshold_higher = 5
+        #Writing change number and coin symbol
+        for i in range(len(changes)):
+            for j in range(len(changes[i])):
+                color = textcolors[1] if threshold_higher > changes[i][j] > threshold_lower else textcolors[0]
+                ax.text(j, i, str(names[i][j]) + '\n' + str(changes[i][j]) + '%',
+                    ha="center", va="center", color=color)
+        fig.tight_layout()
+        ax.axes.xaxis.set_visible(False)    
+        ax.axes.yaxis.set_visible(False)
+        ax.set_title(f"Daily change heatmap, {last_update}")
+        return fig
+    def quick_historical_plot(self, coin, time_step):
+        c_table = Coins_table()
+        fig = c_table.historical(coin, time_step=time_step, nod=100, columns=['close'], add_this_moment_price=True)
+        return fig
+    def main(self):
+        """
+        Main function, shows everything in the quick tab
+        """
+        self.coins_to_follow_up()
+        st.markdown("---")
+        self.worst_best_coin()
+        st.markdown("---")
+        cols = st.beta_columns(2)
+        fig = self.heatmap()
+        cols[0].pyplot(fig)
+        self.crypto.coins_list
+        coin = self.crypto.name2sym[cols[1].selectbox("Coin:", self.crypto.coins_list)]
+        time_step = cols[1].selectbox("Time step:", ["day", "hour", "min"])
+        fig2 = self.quick_historical_plot(coin, time_step)
+        cols[1].pyplot(fig2)
 
 class Coins_table:
 
@@ -152,107 +255,42 @@ class Coins_table:
         html_df = self.table(refreshed) #Getting table HTML from table() function
         st.write(html_df, unsafe_allow_html = True) #Showing the table html
 
-class Quick_tab:
-    #TODO add comments for historical plotting
-    def __init__(self):
-        self.crypto = cryptocurrency.now()
-    def coins_to_follow_up(self, n=5):
-        """
-        Shows first n important coins prices and daily changes in %
-        DO NOT pass numbers bigger tha 5 to n
-        """
-        # Getting quick data from quick() function of cryptocurrency.now
-        
-        table_df = self.crypto.get_dataframe(10, columns=["PRICE", "CHANGEPCTDAY", "IMAGEURL"], 
-                                            replace_coin_name=True) #Quick and important data for first 10 coins
-        quick_df = self.crypto.quick(table_df) #Extracting price and daily change of some important coins
-        st.write(""" # Coins to follow up: """)
-        cols = st.beta_columns(len(quick_df))#Seperating screen to number of coins in quick_df
-        col_counter = 0
-        #Writing data of quicK_df with colors related to positive and negative changes
-        for coin in quick_df.index:
-            row = quick_df.loc[[coin]]
-            price = row["PRICE"][0]
-            change = row["CHANGEPCTDAY"][0]
-            color = 'black'
-            img = tools.image_tag(row["IMAGEURL"][0], width=25)
-            cols[col_counter].write(f""" ## {img} {coin} """, unsafe_allow_html = True)
-            cols[col_counter].write(f"""<font color={color} size=4>$ {price}</font>""", unsafe_allow_html=True)
-            if change<0:
-                color = 'red'
-            elif change>0:
-                color = 'green'
-            cols[col_counter].write(f"""<font color={color} size=4>{change} %</font>""", unsafe_allow_html=True)	
-            col_counter+=1
 
-    def worst_best_coin(self):
-        df = self.crypto.coins_data
-        worst_coin = list(df[df["CHANGEPCTDAY"] == df["CHANGEPCTDAY"].min()].index)[0] #Selecting the coin that has lowes CHANGEPCTDAY
-        best_coin = list(df[df["CHANGEPCTDAY"] == df["CHANGEPCTDAY"].max()].index)[0] #Selecting the coin that has highest CHANGEPCTDAY
-        result_df = df.loc[[worst_coin, best_coin], ["CHANGEPCTDAY", "IMAGEURL"]] #Making a df including logo and daily change
+class Techniqual:
+
+    def __init__(self):
+        self.crypto_now = cryptocurrency.now(base_coins_count=1)
+    def a_month_ago(self):
+        return datetime.now()-timedelta(days = 30)
+    def date_ax(self, time_step, dates):
+        if time_step=="day":
+            return ['', ''] + [f"{t.month}/{t.day}" for t in dates]
+        if time_step=="hour" or time_step=="min":
+            return [f"{t.day}-{t.hour}:{t.minute}" for t in dates]
+    def candle_stick(self, coin, time_step, nod, end_date):
+        crypto = cryptocurrency()
+        ohlc_df = crypto.get_historical(coin=coin, columns="OHLC", currency="USD",
+                                     time_step=time_step , nod = nod-1, end = end_date)
         
-        cols = st.beta_columns(2)
-        #Most profitable coin
-        cols[0].write("""## <b>Biggest Growth:</b>""", unsafe_allow_html=True) #Title
-        img = tools.image_tag("https://cryptocompare.com"+result_df["IMAGEURL"][best_coin], width=30) #Image rendering
-        cols[0].write(f""" ## {img} <font  style="vertical-align:bottom; size:8;"> {self.crypto.sym2name[best_coin]} </font> """,
-                         unsafe_allow_html=True) #Showing logo and best coin's name
-        cols[0].write(f"""<font color="green" size=5>+ {round(result_df["CHANGEPCTDAY"][best_coin], 3)}%</font>""",
-                         unsafe_allow_html=True) #Showing daily change in green
-        #Worst coin
-        cols[1].write("""## <b>Biggest Fall:</b>""", unsafe_allow_html=True) #Title
-        img = tools.image_tag("https://cryptocompare.com"+result_df["IMAGEURL"][worst_coin], width=30) #Image rendering
-        cols[1].write(f""" ## {img} <font style="vertical-align:bottom; size:8;"> {self.crypto.sym2name[worst_coin]} </font> """,
-                         unsafe_allow_html=True) #Showing logo and worst coin's name
-        cols[1].write(f"""<font color="red" size=5 >{round(result_df["CHANGEPCTDAY"][worst_coin], 3)}%</font>""",
-                         unsafe_allow_html=True) #Showing daily change in red
-    def heatmap(self, edge=7):
-        """
-        Makes a matplotlib heatmap from daily change of first edge**2 coins
-        :param: edge: length of heatmap(number of coins in each row/column)
-        :returns: heatmap fig(matplotlib)
-        """
-        last_update = tools.now()
-        crypto = cryptocurrency.now(base_coins_count= edge**2+5) #for an edge*edge square(heatmap) we need atleast edge^2 coins
-        heatmap_df = crypto.get_dataframe(noc = edge**2, columns = ["CHANGEPCTDAY"]) #Heatmap is created using daily change
-        changes = np.array(heatmap_df['CHANGEPCTDAY'], dtype="float").reshape((edge, edge)) #Getting changes and reshaping array to an edge*edge
-        names = np.array(list(heatmap_df.index)).reshape((edge, edge)) #Reshaping coin symbols to an edge*edge array
-        textcolors=["white", "black"]
-        fig, ax = plt.subplots()    
-        ax.imshow(changes, cmap = "RdYlGn", interpolation="nearest", vmin=-8, vmax=8) #Heatmap(olnly colors)
-        threshold_lower = -5
-        threshold_higher = 5
-        #Writing change number and coin symbol
-        for i in range(len(changes)):
-            for j in range(len(changes[i])):
-                color = textcolors[1] if threshold_higher > changes[i][j] > threshold_lower else textcolors[0]
-                ax.text(j, i, str(names[i][j]) + '\n' + str(changes[i][j]) + '%',
-                    ha="center", va="center", color=color)
-        fig.tight_layout()
-        ax.axes.xaxis.set_visible(False)    
-        ax.axes.yaxis.set_visible(False)
-        ax.set_title(f"Daily change heatmap, {last_update}")
-        return fig
-    def quick_historical_plot(self, coin, time_step):
-        c_table = Coins_table()
-        fig = c_table.historical(coin, time_step=time_step, nod=100, columns=['close'], add_this_moment_price=True)
-        return fig
+        fig, ax = plt.subplots()
+        plt.grid(linestyle='-', linewidth=1, alpha=0.3)
+        candlestick2_ochl(ax = ax, opens=ohlc_df['open'], closes=ohlc_df['close'], highs=ohlc_df['high'], lows=ohlc_df['low'],
+                            width=0.3, colorup='g', colordown='r', alpha=0.7)
+        #TODO fix showing dates
+        #https://www.geeksforgeeks.org/plot-candlestick-chart-using-mplfinance-module-in-python/
+        #https://coderzcolumn.com/tutorials/data-science/candlestick-chart-in-python-mplfinance-plotly-bokeh
+        fig.set_size_inches(14, 6)
+        return fig, ohlc_df
+
     def main(self):
-        """
-        Main function, shows everything in the quick tab
-        """
-        self.coins_to_follow_up()
-        st.markdown("---")
-        self.worst_best_coin()
-        st.markdown("---")
-        cols = st.beta_columns(2)
-        fig = self.heatmap()
-        cols[0].pyplot(fig)
-        self.crypto.coins_list
-        coin = self.crypto.name2sym[cols[1].selectbox("Coin:", self.crypto.coins_list)]
-        time_step = cols[1].selectbox("Time step:", ["day", "hour", "min"])
-        fig2 = self.quick_historical_plot(coin, time_step)
-        cols[1].pyplot(fig2)
+        cols = st.beta_columns(4)
+        end_date = cols[0].date_input("End date:", value = datetime.now()) #TODO find min and put datetime.now to max
+        coin = self.crypto_now.name2sym[cols[1].selectbox("coin:", self.crypto_now.coins_list)]
+        nod = cols[2].selectbox("Number of candles", [10, 20, 50, 100, 200], index=2)
+        time_step = cols[3].selectbox("Intervals:", ['day', 'hour', 'min'], index = 0)
+        fig, df = self.candle_stick(coin, time_step, nod, end_date)
+        st.pyplot(fig)
+        st.table(df)
 
 class Info_tab:
     """
@@ -300,7 +338,9 @@ class App:
             self.tabs = { #Tabs on the side bar with their related functions
             "Quick review": self.Quick_tab,
             "Price table": self.Price_table,
+            "Techniqual analysis": self.Techniqual,
             "Info": self.Info_tab,
+            
             }
             return
         
@@ -313,6 +353,9 @@ class App:
         def Info_tab(self):
             info = Info_tab()
             info.main()
+        def Techniqual(self):
+            tech = Techniqual()
+            tech.main()
 
     def main(self):
         """
