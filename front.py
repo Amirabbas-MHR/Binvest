@@ -3,7 +3,7 @@ import streamlit as st
 import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
-from mpl_finance import candlestick2_ochl
+import mplfinance as mpf
 import pickle as pkl
 from cryptocurrency import cryptocurrency
 import time
@@ -226,7 +226,7 @@ class Coins_table:
         st.title("Price chart")
         cols = st.beta_columns(5) #seperating the page to 5 columns
         self.coins_currency_key = cols[0].selectbox("Reference Currency", ["USD", "EUR", "IRR"]) #Currency selector on the first column
-        self.coins_noc = cols[1].selectbox("Number of coins", [10, 30, 50, 100]) #Number of coins selector on the second column
+        self.coins_noc = cols[1].selectbox("Number of coins", [15, 30, 50, 100]) #Number of coins selector on the second column
         #Cort key selector on the 3rd column
         self.coins_sortKey = cols[2].selectbox("Sort key", 
                                                         ["default", 'PRICE', 'MKTCAP','MEDIAN',
@@ -255,31 +255,30 @@ class Coins_table:
         html_df = self.table(refreshed) #Getting table HTML from table() function
         st.write(html_df, unsafe_allow_html = True) #Showing the table html
 
-
-class Techniqual:
+class Technical:
 
     def __init__(self):
         self.crypto_now = cryptocurrency.now(base_coins_count=1)
     def a_month_ago(self):
         return datetime.now()-timedelta(days = 30)
-    def date_ax(self, time_step, dates):
-        if time_step=="day":
-            return ['', ''] + [f"{t.month}/{t.day}" for t in dates]
-        if time_step=="hour" or time_step=="min":
-            return [f"{t.day}-{t.hour}:{t.minute}" for t in dates]
     def candle_stick(self, coin, time_step, nod, end_date):
+        #https://github.com/matplotlib/mplfinance/blob/master/examples/styles.ipynb
         crypto = cryptocurrency()
-        ohlc_df = crypto.get_historical(coin=coin, columns="OHLC", currency="USD",
+        ohlc_df = crypto.get_historical(coin=coin, columns="OHLCV", currency="USD",
                                      time_step=time_step , nod = nod-1, end = end_date)
-        
-        fig, ax = plt.subplots()
-        plt.grid(linestyle='-', linewidth=1, alpha=0.3)
-        candlestick2_ochl(ax = ax, opens=ohlc_df['open'], closes=ohlc_df['close'], highs=ohlc_df['high'], lows=ohlc_df['low'],
-                            width=0.3, colorup='g', colordown='r', alpha=0.7)
-        #TODO fix showing dates
-        #https://www.geeksforgeeks.org/plot-candlestick-chart-using-mplfinance-module-in-python/
-        #https://coderzcolumn.com/tutorials/data-science/candlestick-chart-in-python-mplfinance-plotly-bokeh
-        fig.set_size_inches(14, 6)
+        try:
+            ohlc_df.rename(columns = {"volumeto": "volume"}, inplace=True)
+        except:
+            print("Yak yakitun")
+        #TODO
+        # Two strategies
+        # 1.(better) export fig soehow to return without passing ax=ax[0] to plot func
+        # 2. Grid two plots in a good ratio and share x axis labels for them
+        fig, ax = plt.subplots(2, gridspec_kw={'height_ratios': [5, 1]}, sharex=True)
+        style = mpf.make_mpf_style(base_mpf_style = "yahoo", y_on_right=False)
+        mpf.plot(ohlc_df, type='candle', style = style, ax=ax[0], ylabel="$ price", volume=ax[1], show_nontrading=True)
+        ax[0].grid(color="k", alpha=0.2)
+        fig.set_size_inches(14, 7)
         return fig, ohlc_df
 
     def main(self):
@@ -338,7 +337,7 @@ class App:
             self.tabs = { #Tabs on the side bar with their related functions
             "Quick review": self.Quick_tab,
             "Price table": self.Price_table,
-            "Techniqual analysis": self.Techniqual,
+            "Technical analysis": self.Technical,
             "Info": self.Info_tab,
             
             }
@@ -353,8 +352,8 @@ class App:
         def Info_tab(self):
             info = Info_tab()
             info.main()
-        def Techniqual(self):
-            tech = Techniqual()
+        def Technical(self):
+            tech = Technical()
             tech.main()
 
     def main(self):
