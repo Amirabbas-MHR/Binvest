@@ -27,7 +27,7 @@ class Quick_tab:
                                             replace_coin_name=True) #Quick and important data for first 10 coins
         quick_df = self.crypto.quick(table_df) #Extracting price and daily change of some important coins
         st.write(""" # Coins to follow up: """)
-        cols = st.beta_columns(len(quick_df))#Seperating screen to number of coins in quick_df
+        cols = st.columns(len(quick_df))#Seperating screen to number of coins in quick_df
         col_counter = 0
         #Writing data of quicK_df with colors related to positive and negative changes
         for coin in quick_df.index:
@@ -51,7 +51,7 @@ class Quick_tab:
         best_coin = list(df[df["CHANGEPCTDAY"] == df["CHANGEPCTDAY"].max()].index)[0] #Selecting the coin that has highest CHANGEPCTDAY
         result_df = df.loc[[worst_coin, best_coin], ["CHANGEPCTDAY", "IMAGEURL"]] #Making a df including logo and daily change
         
-        cols = st.beta_columns(2)
+        cols = st.columns(2)
         #Most profitable coin
         cols[0].write("""## <b>Biggest Growth:</b>""", unsafe_allow_html=True) #Title
         img = tools.image_tag("https://cryptocompare.com"+result_df["IMAGEURL"][best_coin], width=30) #Image rendering
@@ -105,7 +105,7 @@ class Quick_tab:
         st.markdown("---")
         self.worst_best_coin()
         st.markdown("---")
-        cols = st.beta_columns(2)
+        cols = st.columns(2)
         fig = self.heatmap()
         cols[0].pyplot(fig)
         self.crypto.coins_list
@@ -172,7 +172,7 @@ class Coins_table:
                     repr_columns["MKTCAP"]: bigNum_format_key, 
                     repr_columns["TOTALVOLUME24HTO"]: bigNum_format_key})\
         .format({repr_columns["CHANGEDAY"] : curr_sign[currency]+'{:.3f}'})\
-        .format({repr_columns["IMAGEURL"]: tools.image_tag}).render() #Render styler object to real html
+        .format({repr_columns["IMAGEURL"]: tools.image_tag}).to_html() #Render styler object to real html
         return html_df.replace("\n", '') #Streamlit is sensitive to \n
 
     def table(self, refreshed):
@@ -224,7 +224,7 @@ class Coins_table:
         """
         ###########################Buttons and options##########################
         st.title("Price chart")
-        cols = st.beta_columns(5) #seperating the page to 5 columns
+        cols = st.columns(5) #seperating the page to 5 columns
         self.coins_currency_key = cols[0].selectbox("Reference Currency", ["USD", "EUR", "IRR"]) #Currency selector on the first column
         self.coins_noc = cols[1].selectbox("Number of coins", [15, 30, 50, 100]) #Number of coins selector on the second column
         #Cort key selector on the 3rd column
@@ -282,7 +282,7 @@ class Technical:
         return fig, ohlc_df
 
     def main(self):
-        cols = st.beta_columns(4)
+        cols = st.columns(4)
         end_date = cols[0].date_input("End date:", value = datetime.now()) #TODO find min and put datetime.now to max
         coin = self.crypto_now.name2sym[cols[1].selectbox("coin:", self.crypto_now.coins_list)]
         nod = cols[2].selectbox("Number of candles", [10, 20, 50, 100, 200], index=2)
@@ -312,7 +312,7 @@ class Info_tab:
         st.markdown("""---""")
         st.write(""" ## <b>Powered by:</b>""", unsafe_allow_html = True)
         st.markdown("""---""")
-        cols = st.beta_columns(2) #Sepereating page to 2 columns
+        cols = st.columns(2) #Sepereating page to 2 columns
         for index, logo in enumerate(images):
             cols[int(index%2)].image(images[logo], width = 200) #displaying logos in order
         st.markdown("""---""")
